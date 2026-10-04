@@ -23,6 +23,14 @@ from the chip target:
 Manufacturer name is `NiftyFish`. Colour order (GRB), power source and
 the Zigbee endpoint are also set in `main/config.h`.
 
+## Hardware
+
+`hardware/ZigbeeLEDController/` is the KiCad 9 project for the
+controller board: an ESP32-C6-MINI-1 with a USB-C input, a CH221K USB
+PD sink, an AP63203 3.3 V buck regulator and an LED strip output. The
+folder also has the PCBWay fabrication zip (`.kicad_pcb.zip`: gerbers,
+BOM and positions) and a STEP export of the board.
+
 ## Build and flash
 
 Needs ESP-IDF 5.x (built with v5.5.2).
