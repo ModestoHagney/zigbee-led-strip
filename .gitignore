@@ -38,6 +38,8 @@ sdkconfig
 **/components/.idf/
 # For modern ESP-IDF component manager
 managed_components/
+# Rewritten per chip target; versions are pinned in main/idf_component.yml
+dependencies.lock
 # If ESP-IDF tools are installed/referenced locally to the project
 .espressif/
 

@@ -12,7 +12,7 @@
   "clangd.arguments": [
     "--background-index",
     "--query-driver=**",
-    "--compile-commands-dir=c:\\Users\\Zac\\Documents\\ClaudeCode\\zigbee_led_h2\\build"
+    "--compile-commands-dir=c:\\Users\\Zac\\Documents\\git\\zigbee-led-strip\\build"
   ],
   "idf.flashType": "UART"
 }

@@ -1,11 +1,27 @@
 #pragma once
 
+#include "sdkconfig.h"
+
+// -------------------------------------------------------
+// BOARD CONFIG - picked by chip target (idf.py set-target)
+// -------------------------------------------------------
+
+#if CONFIG_IDF_TARGET_ESP32H2
+#define LED_GPIO           GPIO_NUM_22
+#define LED_COUNT          64
+#define MODEL_IDENTIFIER   "\x06" "H2-LED"
+#elif CONFIG_IDF_TARGET_ESP32C6
+#define LED_GPIO           GPIO_NUM_19
+#define LED_COUNT          144
+#define MODEL_IDENTIFIER   "\x06" "C6-LED"
+#else
+#error "No board config for this target - add LED_GPIO, LED_COUNT and MODEL_IDENTIFIER"
+#endif
+
 // -------------------------------------------------------
 // LED STRIP CONFIG
 // -------------------------------------------------------
 
-#define LED_GPIO         GPIO_NUM_22
-#define LED_COUNT        64
 #define LED_ENDPOINT     1
 
 // Strip color order, handled by the driver itself.
@@ -14,7 +30,6 @@
 
 // Device identity with character hex length prefix (see below for details)
 #define MANUFACTURER_NAME  "\x09" "NiftyFish"
-#define MODEL_IDENTIFIER   "\x06" "H2-LED"
 
 // Power source: 0x01 = mains, 0x03 = battery
 #define POWER_SOURCE  0x01
