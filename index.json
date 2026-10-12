@@ -7,5 +7,23 @@
     "imageType": 3,
     "sha512": "5b14097b1868ab6171643da33f47d765a09525d6d97917cd03ebc9cb4fba6dd86e04fcf1f36b1e9fe84f8d6647d3f402a3e70ee0eac22ea1c455c39f963b41f9",
     "url": "https://raw.githubusercontent.com/ModestoHagney/zigbee-led-strip/firmware/niftyfish-4button-v4.ota"
+  },
+  {
+    "fileName": "niftyfish-c6-led-v3.ota",
+    "fileVersion": 3,
+    "fileSize": 669038,
+    "manufacturerCode": 4097,
+    "imageType": 2,
+    "sha512": "4af05dba2771b84839a4c05b7f7f42289169a3ecb6dab8e61f7239431d6debb1fa99b51f34c9f5ea6a25a7ae337613468cc4b4998d2ce1409ea4a75dcda13ca9",
+    "url": "https://raw.githubusercontent.com/ModestoHagney/zigbee-led-strip/firmware/niftyfish-c6-led-v3.ota"
+  },
+  {
+    "fileName": "niftyfish-h2-led-v3.ota",
+    "fileVersion": 3,
+    "fileSize": 674206,
+    "manufacturerCode": 4097,
+    "imageType": 1,
+    "sha512": "b205b97c671f47cb7d5acea44a524a072f8f989ebfb3fcb8ff6a00cb8d4804f3b18b2c189d2b5a76de4459151e5bdd13343d341ee1c2aeebc105060fc7619058",
+    "url": "https://raw.githubusercontent.com/ModestoHagney/zigbee-led-strip/firmware/niftyfish-h2-led-v3.ota"
   }
 ]
