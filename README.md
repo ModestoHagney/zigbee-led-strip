@@ -4,9 +4,10 @@
 # Zigbee LED Strip
 
 Firmware that turns an ESP32-H2 or ESP32-C6 and a WS2812 strip into a
-Zigbee colour light. It joins the network as an end device and shows up
-in Home Assistant as one colour dimmable light (on/off, brightness, and
-colour in either hue/saturation or XY).
+Zigbee colour light. It joins the network as a router (it relays for
+other Zigbee devices, like a mains-powered bulb) and shows up in Home
+Assistant as one colour dimmable light (on/off, brightness, and colour
+in either hue/saturation or XY).
 
 The whole strip is one light: every pixel gets the same colour.
 
@@ -20,8 +21,47 @@ from the chip target:
 | ESP32-H2 | GPIO 22      | 64        | `H2-LED`     |
 | ESP32-C6 | GPIO 19      | 144       | `C6-LED`     |
 
-Manufacturer name is `NiftyFish`. Colour order (GRB), power source and
-the Zigbee endpoint are also set in `main/config.h`.
+The LED count in the table is only the default, see Settings below.
+Manufacturer name is `NiftyFish`. Power source and the Zigbee endpoint
+are set in `main/config.h`.
+
+## Settings in Home Assistant
+
+These are changed on the device page in Home Assistant (ZHA) and saved
+on the board. `main/config.h` holds the defaults a freshly flashed board
+starts with.
+
+| Setting | Range | Notes |
+|---------|-------|-------|
+| LED count | 1 to 1024 | |
+| Colour order | GRB, RGB, BRG, RBG, GBR, BGR | for strips that show the wrong colours |
+| LED type | RGB, RGBW | RGBW sends white to the strip's white LED |
+| Max current | 0 to 65000 mA | dims the strip to stay under it, 0 = no limit |
+| White balance red, green, blue | 0 to 100 % | so white matches other bulbs |
+| Dimming curve | 10 to 30 | 10 = straight, 22 = like most bulbs |
+| Zigbee transmit power | -24 to 20 dBm | |
+| Start-up behaviour | off, on, toggle, previous | what the strip does when power returns |
+| On/off transition time | tenths of a second | fade when switching, 0 = no fade |
+
+The last two are standard Zigbee settings that ZHA shows by itself. The
+rest need the quirk file: copy `homeassistant/niftyfish_led.py` to
+`/config/zha_quirks/` in Home Assistant, add this to
+`configuration.yaml` and restart:
+
+```yaml
+zha:
+  custom_quirks_path: /config/zha_quirks/
+```
+
+The device also reports the chip temperature and an estimated strip
+power. The estimate is worked out from colour, brightness and LED count
+with `LED_MA_PER_CHANNEL` and `LED_VOLTS` from `main/config.h`; the
+current limit uses the same numbers.
+
+The Identify button blinks the strip white.
+
+The last colour, brightness and on/off state are saved a few seconds
+after they change and come back after a power cut.
 
 ## Hardware
 
@@ -44,7 +84,46 @@ Use `esp32c6` for the C6 board. Switching target regenerates
 `sdkconfig` and `dependencies.lock`; neither is committed.
 
 Run `idf.py -p PORT erase-flash` first if the board has been paired
-before and you want it to join as a new device.
+before and you want it to join as a new device. This is also needed
+once for a board flashed before wireless updates were added, because
+the partition layout changed; then remove it from ZHA and pair it again.
+
+An existing `sdkconfig` keeps the old end-device setting. Delete it (or
+run `idf.py set-target` again) so `sdkconfig.defaults` applies.
+
+The partition table has two firmware slots of 896 KB each and fits 2 MB
+flash.
+
+## Wireless updates
+
+After the first USB flash, new firmware can be sent over Zigbee from
+Home Assistant.
+
+One-time setup in Home Assistant: make the folder `/config/zigbee_ota/`,
+add this to `configuration.yaml` and restart.
+
+```yaml
+zha:
+  zigpy_config:
+    ota:
+      extra_providers:
+        - type: advanced
+          path: /config/zigbee_ota
+          warning: I understand I can *destroy* my devices by enabling OTA updates from files. Some OTA updates can be mistakenly applied to the wrong device, breaking it. I am consciously using this at my own risk.
+```
+
+For each update:
+
+1. Raise `FW_VERSION` in `main/config.h`.
+2. `idf.py build`
+3. `python tools/make_ota.py` writes `build/niftyfish-<chip>-led-v<version>.ota`.
+4. Copy that file to `/config/zigbee_ota/` and restart Home Assistant
+   (or reload ZHA).
+5. The device's Firmware update entity offers the new version.
+
+Build once per chip: an H2 file is never offered to a C6 board. If new
+firmware crashes before it starts Zigbee, the board goes back to the
+previous one on the next boot.
 
 ## Pairing
 
