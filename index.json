@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "fileName": "niftyfish-4button-v4.ota",
+    "fileVersion": 4,
+    "fileSize": 698254,
+    "manufacturerCode": 4097,
+    "imageType": 3,
+    "sha512": "5b14097b1868ab6171643da33f47d765a09525d6d97917cd03ebc9cb4fba6dd86e04fcf1f36b1e9fe84f8d6647d3f402a3e70ee0eac22ea1c455c39f963b41f9",
+    "url": "https://raw.githubusercontent.com/ModestoHagney/zigbee-led-strip/firmware/niftyfish-4button-v4.ota"
+  }
+]
