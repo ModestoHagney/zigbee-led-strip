@@ -140,6 +140,14 @@ typedef struct {
     uint16_t x, y;
 } light_state_t;
 
+// When a light is switched off the stack drops its level to 0, and it
+// hands that same 0 back on the next switch-on. Taking it as the
+// brightness left the light on but dark. So a level of 0 is ignored and
+// the last real brightness is kept.
+static uint8_t keep_brightness(uint8_t current, uint8_t written) {
+    return written ? written : current;
+}
+
 static esp_timer_handle_t save_timer;
 
 static void state_save(void *arg) {
@@ -157,7 +165,7 @@ static void state_load(void) {
     light_state_t s = {0};
     bool saved = nvs_load("state", &s, sizeof(s));
     if (saved) {
-        light_level = s.level;
+        light_level = s.level ? s.level : 254;  // 0: saved by a build that stored it
         light_hue = s.hue;
         light_saturation = s.saturation;
         color_mode = s.color_mode;
@@ -543,7 +551,8 @@ static esp_err_t zb_action_handler(esp_zb_core_action_callback_id_t callback_id,
                 }
             } else if (msg->info.cluster == ESP_ZB_ZCL_CLUSTER_ID_LEVEL_CONTROL) {
                 if (attr_id == ESP_ZB_ZCL_ATTR_LEVEL_CONTROL_CURRENT_LEVEL_ID) {
-                    light_level = *(uint8_t *)val_ptr;
+                    // see keep_brightness() for why 0 is skipped
+                    light_level = keep_brightness(light_level, *(uint8_t *)val_ptr);
                     ESP_LOGI(TAG, "light level: %d", light_level);
                     led_apply();
                 } else if (attr_id == ESP_ZB_ZCL_ATTR_LEVEL_CONTROL_ON_OFF_TRANSITION_TIME_ID) {
