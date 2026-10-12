@@ -97,33 +97,46 @@ flash.
 ## Wireless updates
 
 After the first USB flash, new firmware can be sent over Zigbee from
-Home Assistant.
+Home Assistant. Home Assistant downloads it from the `firmware` branch
+of this repo, so the repo has to be public.
 
-One-time setup in Home Assistant: make the folder `/config/zigbee_ota/`,
-add this to `configuration.yaml` and restart.
+One-time setup in Home Assistant: add this to `configuration.yaml` and
+restart.
 
 ```yaml
 zha:
   zigpy_config:
     ota:
       extra_providers:
-        - type: advanced
-          path: /config/zigbee_ota
-          warning: I understand I can *destroy* my devices by enabling OTA updates from files. Some OTA updates can be mistakenly applied to the wrong device, breaking it. I am consciously using this at my own risk.
+        - type: z2m
+          url: https://raw.githubusercontent.com/ModestoHagney/zigbee-led-strip/firmware/index.json
 ```
 
-For each update:
+Home Assistant checks that index once a day (and when it restarts). A
+board asks Home Assistant for updates when it joins and then every
+hour; when a newer version is listed, its Firmware entity offers it.
+
+To publish an update:
 
 1. Raise `FW_VERSION` in `main/config.h`.
-2. `idf.py build`
+2. `idf.py build`, once per chip.
 3. `python tools/make_ota.py` writes `build/niftyfish-<chip>-led-v<version>.ota`.
-4. Copy that file to `/config/zigbee_ota/` and restart Home Assistant
-   (or reload ZHA).
-5. The device's Firmware update entity offers the new version.
+4. On the `firmware` branch, replace the old `.ota` file with the new
+   one, then run
+   `python tools/make_index.py . https://raw.githubusercontent.com/ModestoHagney/zigbee-led-strip/firmware`
+   and commit and push.
 
-Build once per chip: an H2 file is never offered to a C6 board. If new
-firmware crashes before it starts Zigbee, the board goes back to the
-previous one on the next boot.
+The `firmware` branch also carries the 4-button light's update file, so
+one line in Home Assistant covers every NiftyFish device.
+
+An H2 file is never offered to a C6 board, or a strip file to the
+4-button light: each has its own image type. If new firmware crashes
+before it starts Zigbee, the board goes back to the previous one on the
+next boot.
+
+Without GitHub: put the `.ota` file in a folder on the Home Assistant
+machine and list that folder as a `type: advanced` provider instead
+(ZHA's documentation has the exact lines).
 
 ## Pairing
 
