@@ -728,6 +728,18 @@ static void tx_power_init(void) {
         ESP_ZB_ZCL_CLUSTER_SERVER_ROLE, ATTR_TX_POWER, &cfg.tx_power, false);
 }
 
+// The stack starts these two standard settings at its own values, so
+// Home Assistant showed power-on behaviour as Off while the board was
+// using "previous". Put the values the firmware really uses back in.
+static void standard_settings_sync(void) {
+    esp_zb_zcl_set_attribute_val(LED_ENDPOINT, ESP_ZB_ZCL_CLUSTER_ID_ON_OFF,
+        ESP_ZB_ZCL_CLUSTER_SERVER_ROLE, ESP_ZB_ZCL_ATTR_ON_OFF_START_UP_ON_OFF,
+        &cfg.startup_on_off, false);
+    esp_zb_zcl_set_attribute_val(LED_ENDPOINT, ESP_ZB_ZCL_CLUSTER_ID_LEVEL_CONTROL,
+        ESP_ZB_ZCL_CLUSTER_SERVER_ROLE, ESP_ZB_ZCL_ATTR_LEVEL_CONTROL_ON_OFF_TRANSITION_TIME_ID,
+        &cfg.fade_time, false);
+}
+
 void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct) {
     esp_err_t                err = signal_struct->esp_err_status;
     esp_zb_app_signal_type_t sig = *signal_struct->p_app_signal;
@@ -746,6 +758,7 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct) {
                 // The stack came up: a wirelessly updated build is good to
                 // keep. One that crashes before this is rolled back.
                 esp_ota_mark_app_valid_cancel_rollback();
+                standard_settings_sync();
                 ESP_LOGI(TAG, "starting network steering");
                 esp_zb_bdb_start_top_level_commissioning(
                     ESP_ZB_BDB_MODE_NETWORK_STEERING);

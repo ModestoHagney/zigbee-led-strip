@@ -15,6 +15,7 @@ then restart Home Assistant.
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
+from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLHeader
 
 
@@ -58,10 +59,24 @@ class LedSettings(CustomCluster):
         tx_power = ZCLAttributeDef(id=0x0008, type=t.int8s, access="rw")
 
 
+class ChipTemperature(CustomCluster, DeviceTemperature):
+    """Chip temperature in the scale ZHA expects.
+
+    The firmware sends whole degrees, as the Zigbee spec says. ZHA shows
+    this cluster's value divided by 100, so 25 degrees came out as 0.25.
+    """
+
+    def _update_attribute(self, attrid, value):
+        if attrid == DeviceTemperature.AttributeDefs.current_temperature.id and value is not None:
+            value = value * 100
+        super()._update_attribute(attrid, value)
+
+
 for model in ("C6-LED", "H2-LED"):
     (
         QuirkBuilder("NiftyFish", model)
         .replaces(LedSettings)
+        .replaces(ChipTemperature)
         .number(
             "led_count",
             LedSettings.cluster_id,

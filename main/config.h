@@ -27,7 +27,7 @@
 // Raise this for every build you send out as a wireless update.
 // Home Assistant only offers a file with a higher number than the
 // board is running. Use the same number for tools/make_ota.py.
-#define FW_VERSION         1
+#define FW_VERSION         2
 
 // Has to match the --manufacturer value given to tools/make_ota.py
 #define OTA_MANUFACTURER   0x1001
