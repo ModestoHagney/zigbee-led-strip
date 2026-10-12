@@ -6,6 +6,7 @@
 #include "esp_system.h"
 #include "esp_ota_ops.h"
 #include "esp_zigbee_core.h"
+#include "esp_zigbee_ota.h"
 #include "zcl/esp_zigbee_zcl_command.h"
 #include "nvs_flash.h"
 #include "nvs.h"
@@ -484,6 +485,34 @@ static esp_err_t ota_handler(const esp_zb_zcl_ota_upgrade_value_message_t *msg) 
     return ESP_OK;
 }
 
+// How often the board asks Home Assistant whether there is an update.
+// The first question, right after joining, is also what tells Home
+// Assistant which version is running.
+#define OTA_QUERY_MINUTES  60
+
+static void ota_server_found(esp_zb_zdp_status_t status, uint16_t addr, uint8_t endpoint, void *ctx) {
+    if (status != ESP_ZB_ZDP_STATUS_SUCCESS) {
+        ESP_LOGW(TAG, "update: the coordinator has no update server");
+        return;
+    }
+    esp_zb_ota_upgrade_client_query_interval_set(LED_ENDPOINT, OTA_QUERY_MINUTES);
+    esp_zb_ota_upgrade_client_query_image_req(addr, endpoint);
+}
+
+// Ask the coordinator which endpoint its update server is on
+static void ota_find_server(void) {
+    uint16_t clusters[] = {ESP_ZB_ZCL_CLUSTER_ID_OTA_UPGRADE};
+    esp_zb_zdo_match_desc_req_param_t req = {
+        .dst_nwk_addr     = 0x0000,
+        .addr_of_interest = 0x0000,
+        .profile_id       = ESP_ZB_AF_HA_PROFILE_ID,
+        .num_in_clusters  = 1,
+        .num_out_clusters = 0,
+        .cluster_list     = clusters,
+    };
+    esp_zb_zdo_match_cluster(&req, ota_server_found, NULL);
+}
+
 // -------------------------------------------------------
 // Zigbee callback - handle light commands from HA
 // -------------------------------------------------------
@@ -772,6 +801,7 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct) {
         case ESP_ZB_BDB_SIGNAL_STEERING:
             if (err == ESP_OK) {
                 ESP_LOGI(TAG, "joined network! ready.");
+                ota_find_server();
             } else {
                 ESP_LOGI(TAG, "steering failed, retrying");
                 esp_zb_bdb_start_top_level_commissioning(
