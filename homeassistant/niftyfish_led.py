@@ -1,8 +1,12 @@
-"""ZHA quirk for the NiftyFish Zigbee LED strip controllers (C6-LED, H2-LED).
+"""ZHA quirk for the NiftyFish Zigbee LED devices.
 
 Puts the firmware's settings on the device page in Home Assistant, under
 Configuration. The attribute ids have to match settings_attrs in
 main/main.c.
+
+Covers the strip controllers (C6-LED, H2-LED) and the 4-button bedside
+light. A device is only touched once its firmware has the settings
+cluster, so one running older firmware carries on exactly as before.
 
 Install: copy this file to /config/zha_quirks/ and add to configuration.yaml
 
@@ -72,9 +76,17 @@ class ChipTemperature(CustomCluster, DeviceTemperature):
         super()._update_attribute(attrid, value)
 
 
-for model in ("C6-LED", "H2-LED"):
+def has_settings(device) -> bool:
+    """True if the firmware on this device has the settings cluster."""
+    return 1 in device.endpoints and LedSettings.cluster_id in device.endpoints[1].in_clusters
+
+
+# The 4-button light is listed under both names it can report: its strip
+# endpoint says 4-button-strip, its button endpoints say 4-button-led.
+for model in ("C6-LED", "H2-LED", "4-button-strip", "4-button-led"):
     (
         QuirkBuilder("NiftyFish", model)
+        .filter(has_settings)
         .replaces(LedSettings)
         .replaces(ChipTemperature)
         .number(
