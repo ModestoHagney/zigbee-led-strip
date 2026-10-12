@@ -17,7 +17,7 @@ then restart Home Assistant.
 """
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import EntityType, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLHeader
@@ -41,6 +41,26 @@ class LedType(t.enum8):
     RGBW = 1
 
 
+class LedAnimation(t.enum8):
+    """What a button LED of the 4-button light does while it is on.
+
+    The whole list is here from the start so that firmware can gain
+    animations later without this file changing. One the firmware doesn't
+    know yet shows as Steady.
+    """
+
+    Steady = 0
+    Breathe = 1
+    Blink = 2
+    Heartbeat = 3
+    Chase = 4
+    Alternate = 5
+    Rainbow = 6
+    Candle = 7
+    Countdown = 8
+    Strobe = 9
+
+
 class LedSettings(CustomCluster):
     """Settings cluster of the LED strip firmware."""
 
@@ -61,6 +81,11 @@ class LedSettings(CustomCluster):
         white_blue = ZCLAttributeDef(id=0x0006, type=t.uint8_t, access="rw")
         dimming_curve = ZCLAttributeDef(id=0x0007, type=t.uint8_t, access="rw")
         tx_power = ZCLAttributeDef(id=0x0008, type=t.int8s, access="rw")
+        # 4-button light only
+        button_1_led_animation = ZCLAttributeDef(id=0x0010, type=LedAnimation, access="rw")
+        button_2_led_animation = ZCLAttributeDef(id=0x0011, type=LedAnimation, access="rw")
+        button_3_led_animation = ZCLAttributeDef(id=0x0012, type=LedAnimation, access="rw")
+        button_4_led_animation = ZCLAttributeDef(id=0x0013, type=LedAnimation, access="rw")
 
 
 class ChipTemperature(CustomCluster, DeviceTemperature):
@@ -81,10 +106,9 @@ def has_settings(device) -> bool:
     return 1 in device.endpoints and LedSettings.cluster_id in device.endpoints[1].in_clusters
 
 
-# The 4-button light is listed under both names it can report: its strip
-# endpoint says 4-button-strip, its button endpoints say 4-button-led.
-for model in ("C6-LED", "H2-LED", "4-button-strip", "4-button-led"):
-    (
+def led_device(model: str) -> QuirkBuilder:
+    """The settings every NiftyFish LED device has."""
+    return (
         QuirkBuilder("NiftyFish", model)
         .filter(has_settings)
         .replaces(LedSettings)
@@ -173,5 +197,25 @@ for model in ("C6-LED", "H2-LED", "4-button-strip", "4-button-led"):
             translation_key="tx_power",
             fallback_name="Zigbee transmit power",
         )
-        .add_to_registry()
     )
+
+
+# The LED strip controllers
+for model in ("C6-LED", "H2-LED"):
+    led_device(model).add_to_registry()
+
+# The 4-button light, under both names it can report: its strip endpoint
+# says 4-button-strip, its button endpoints say 4-button-led. It also gets
+# an animation for the LED under each button.
+for model in ("4-button-strip", "4-button-led"):
+    quirk = led_device(model)
+    for button in (1, 2, 3, 4):
+        quirk = quirk.enum(
+            f"button_{button}_led_animation",
+            LedAnimation,
+            LedSettings.cluster_id,
+            entity_type=EntityType.STANDARD,
+            translation_key=f"button_{button}_led_animation",
+            fallback_name=f"Button {button} LED animation",
+        )
+    quirk.add_to_registry()
